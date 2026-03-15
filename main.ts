@@ -34,18 +34,31 @@ const command = new Deno.Command(join(currentDirectory, "./comparePrices.sh"), {
   args: [currentSpeed, currentPrice, address],
 });
 
-const { code, stdout } = command.outputSync();
+const { code, stdout, stderr } = command.outputSync();
 const response = new TextDecoder().decode(stdout);
 
-if (code !== 0) {
-  console.log(response);
+if (stderr.length > 0) {
+  Deno.stderr.writeSync(stderr);
+}
+
+if (code === 3) {
+  if (stdout.length > 0) {
+    Deno.stdout.writeSync(stdout);
+  }
 
   const cleanResponse = response.replace(/(\[0;31m|\[0;32m|\[0m)/g, "");
 
   sendMail(cleanResponse, () => {
     Deno.exit(1);
   });
+} else if (code !== 0) {
+  if (stdout.length > 0) {
+    Deno.stdout.writeSync(stdout);
+  }
+  Deno.exit(code);
 } else {
-  console.log(response);
+  if (stdout.length > 0) {
+    Deno.stdout.writeSync(stdout);
+  }
   Deno.exit();
 }

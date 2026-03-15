@@ -1,14 +1,14 @@
 #!/bin/sh
 
 if ! command -v jq >/dev/null 2>&1; then
-    echo "jq is not installed. Please install jq to proceed."
+    echo "jq is not installed. Please install jq to proceed." >&2
     exit 1
 fi
 
 ADDRESS="$1"
 
 if [ -z "$ADDRESS" ]; then
-    echo "❌ Please provide an address as an argument."
+    echo "❌ Please provide an address as an argument." >&2
     exit 1
 fi
 
@@ -33,10 +33,10 @@ if [ "$NETWORK_RESPONSE_TYPE" = "COVERAGE_NOT_FOUND" ]; then
     FORMATTED_ADDRESS=$(echo "$NETWORKS_RESPONSE" | jq -r '.data.formattedAddress // empty')
 
     if [ -n "$FORMATTED_ADDRESS" ]; then
-        echo "Coverage not found for address: $FORMATTED_ADDRESS" >&2
-    else
-        echo "Coverage not found for address: $ADDRESS" >&2
+        ADDRESS="$FORMATTED_ADDRESS"
     fi
+    
+    echo "⚠️ Coverage not found for address: $ADDRESS" >&2
     exit 2
 fi
 
