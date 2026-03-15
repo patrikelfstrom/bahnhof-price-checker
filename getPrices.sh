@@ -27,6 +27,19 @@ NETWORKS_RESPONSE=$(curl -s -c cookiejar -b cookiejar \
     -d "{\"address\":\"$ADDRESS\"}" \
     https://bahnhof.se/ajax/search/networks) >/dev/null
 
+NETWORK_RESPONSE_TYPE=$(echo "$NETWORKS_RESPONSE" | jq -r '.data.type // empty')
+
+if [ "$NETWORK_RESPONSE_TYPE" = "COVERAGE_NOT_FOUND" ]; then
+    FORMATTED_ADDRESS=$(echo "$NETWORKS_RESPONSE" | jq -r '.data.formattedAddress // empty')
+
+    if [ -n "$FORMATTED_ADDRESS" ]; then
+        echo "Coverage not found for address: $FORMATTED_ADDRESS" >&2
+    else
+        echo "Coverage not found for address: $ADDRESS" >&2
+    fi
+    exit 2
+fi
+
 # Extract redirectUrl from network
 REDIRECT_URL=$(echo "$NETWORKS_RESPONSE" | jq -r '.data.networks[].redirectUrl')
 
