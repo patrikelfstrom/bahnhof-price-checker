@@ -1,41 +1,47 @@
-import { load, nodemailer } from "./deps.ts";
+import { getEnv } from "./config.ts";
+import { nodemailer } from "./deps.ts";
 
-const env = await load();
+const mailSubject = getEnv("MAIL_SUBJECT");
+const mailFrom = getEnv("MAIL_FROM");
+const mailTo = getEnv("MAIL_TO");
+const mailHost = getEnv("MAIL_HOST");
+const mailPort = getEnv("MAIL_PORT");
+const mailUsername = getEnv("MAIL_USERNAME");
+const mailPassword = getEnv("MAIL_PASSWORD");
 
-const mailSubject = env["MAIL_SUBJECT"] ?? Deno.env.get("MAIL_SUBJECT");
-const mailFrom = env["MAIL_FROM"] ?? Deno.env.get("MAIL_FROM");
-const mailTo = env["MAIL_TO"] ?? Deno.env.get("MAIL_TO");
-const mailHost = env["MAIL_HOST"] ?? Deno.env.get("MAIL_HOST");
-const mailPort = env["MAIL_PORT"] ?? Deno.env.get("MAIL_PORT");
-const mailUsername = env["MAIL_USERNAME"] ?? Deno.env.get("MAIL_USERNAME");
-const mailPassword = env["MAIL_PASSWORD"] ?? Deno.env.get("MAIL_PASSWORD");
-
-export function sendMail(text: string, callback: () => void) {
+export function sendMail(text: string) {
   console.log("💌 Sending mail...");
 
   const transporter = nodemailer.createTransport({
-    host: mailHost,
-    port: Number(mailPort),
+    host: mailHost!,
+    port: Number(mailPort!),
     auth: {
-      user: mailUsername,
-      pass: mailPassword,
+      user: mailUsername!,
+      pass: mailPassword!,
     },
   });
 
-  transporter.sendMail(
-    {
-      from: mailFrom,
-      to: mailTo,
-      subject: mailSubject,
-      text,
-    },
-    (error) => {
-      if (error) {
-        console.error(error);
-      } else {
+  return new Promise<void>((resolve, reject) => {
+    transporter.sendMail(
+      {
+        from: mailFrom!,
+        to: mailTo!,
+        subject: mailSubject!,
+        text,
+      },
+      (error) => {
+        if (error) {
+          const message = error instanceof Error
+            ? error.message
+            : String(error);
+
+          reject(new Error("❌ Mail notification failed: " + message));
+          return;
+        }
+
         console.log("✅ Mail sent");
-      }
-      callback && callback();
-    }
-  );
+        resolve();
+      },
+    );
+  });
 }

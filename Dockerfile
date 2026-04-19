@@ -1,6 +1,6 @@
 FROM denoland/deno:alpine
 
-RUN apk add --no-cache jq curl
+RUN apk add --no-cache jq curl apprise
 
 WORKDIR /app
 
@@ -11,6 +11,6 @@ COPY * ./
 
 RUN chmod +x *.sh
 
-RUN deno cache main.ts
+RUN deno cache validateEnv.ts main.ts
 
 ENTRYPOINT ["/app/entrypoint.sh"]

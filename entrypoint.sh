@@ -1,8 +1,9 @@
 #!/bin/sh
 
-if [ -z "$CRON_SCHEDULE" ]; then
-    echo "❌ CRON_SCHEDULE is not set"
-fi
+set -e
+
+echo "🔍 Validating Environment"
+deno run --allow-env --allow-read /app/validateEnv.ts
 
 echo "🛠️ Installing Cron Job"
 
