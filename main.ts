@@ -1,4 +1,5 @@
 import { dirname, fromFileUrl, join, load } from "./deps.ts";
+import { sendApprise } from "./sendApprise.ts";
 import { sendMail } from "./sendMail.ts";
 
 console.log("💸 Running Bahnhof Price Checker...");
@@ -9,6 +10,16 @@ const environmentVariables = [
   "ADDRESS",
   "CURRENT_SPEED",
   "CURRENT_PRICE",
+];
+
+for (const variable of environmentVariables) {
+  if (Deno.env.has(variable) === false && env[variable] === undefined) {
+    console.error(`❌ Required environment variable '${variable}' is not set.`);
+    Deno.exit(1);
+  }
+}
+
+const mailEnvironmentVariables = [
   "MAIL_SUBJECT",
   "MAIL_FROM",
   "MAIL_TO",
@@ -18,11 +29,28 @@ const environmentVariables = [
   "MAIL_PASSWORD",
 ];
 
-for (const variable of environmentVariables) {
-  if (Deno.env.has(variable) === false && env[variable] === undefined) {
+const getEnv = (variable: string) => env[variable] ?? Deno.env.get(variable);
+const missingMailVariables = mailEnvironmentVariables.filter((variable) =>
+  getEnv(variable) === undefined
+);
+const isMailConfigured = missingMailVariables.length === 0;
+const isMailPartiallyConfigured =
+  missingMailVariables.length < mailEnvironmentVariables.length;
+const isAppriseConfigured = Boolean(getEnv("APPRISE_URL"));
+
+if (isMailPartiallyConfigured && !isMailConfigured) {
+  for (const variable of missingMailVariables) {
     console.error(`❌ Required environment variable '${variable}' is not set.`);
-    Deno.exit(1);
   }
+
+  Deno.exit(1);
+}
+
+if (!isMailConfigured && !isAppriseConfigured) {
+  console.error(
+    "❌ At least one notification channel must be configured. Set APPRISE_URL or all MAIL_* variables.",
+  );
+  Deno.exit(1);
 }
 
 const address = env["ADDRESS"] ?? Deno.env.get("ADDRESS");
@@ -37,28 +65,53 @@ const command = new Deno.Command(join(currentDirectory, "./comparePrices.sh"), {
 const { code, stdout, stderr } = command.outputSync();
 const response = new TextDecoder().decode(stdout);
 
+function writeOutputWithTrailingNewline(output: Uint8Array) {
+  if (output.length === 0) {
+    return;
+  }
+
+  Deno.stdout.writeSync(output);
+
+  if (output[output.length - 1] !== 10) {
+    Deno.stdout.writeSync(new TextEncoder().encode("\n"));
+  }
+}
+
+function stripAnsiEscapeCodes(text: string) {
+  return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "").trim();
+}
+
 if (stderr.length > 0) {
   Deno.stderr.writeSync(stderr);
 }
 
 if (code === 3) {
-  if (stdout.length > 0) {
-    Deno.stdout.writeSync(stdout);
+  writeOutputWithTrailingNewline(stdout);
+
+  const cleanResponse = stripAnsiEscapeCodes(response);
+  const notifications: Promise<void>[] = [];
+
+  if (isMailConfigured) {
+    notifications.push(sendMail(cleanResponse));
   }
 
-  const cleanResponse = response.replace(/(\[0;31m|\[0;32m|\[0m)/g, "");
+  if (isAppriseConfigured) {
+    notifications.push(sendApprise(cleanResponse));
+  }
 
-  sendMail(cleanResponse, () => {
-    Deno.exit(1);
-  });
+  const notificationResults = await Promise.allSettled(notifications);
+
+  for (const result of notificationResults) {
+    if (result.status === "rejected") {
+      console.error(result.reason);
+    }
+  }
+
+  Deno.exit(1);
 } else if (code !== 0) {
-  if (stdout.length > 0) {
-    Deno.stdout.writeSync(stdout);
-  }
+  writeOutputWithTrailingNewline(stdout);
   Deno.exit(code);
 } else {
-  if (stdout.length > 0) {
-    Deno.stdout.writeSync(stdout);
-  }
+  writeOutputWithTrailingNewline(stdout);
   Deno.exit();
 }
