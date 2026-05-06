@@ -4,13 +4,12 @@ RUN apk add --no-cache jq curl apprise
 
 WORKDIR /app
 
-COPY deps.ts .
-RUN deno cache deps.ts
+COPY deno.json deno.lock ./
 
 COPY * ./
 
 RUN chmod +x *.sh
 
-RUN deno cache main.ts
+RUN deno cache --lock=deno.lock main.ts
 
 ENTRYPOINT ["/app/entrypoint.sh"]
