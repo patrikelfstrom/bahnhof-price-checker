@@ -54,6 +54,9 @@ sent.
 `APPRISE_TITLE` is optional and defaults to `MAIL_SUBJECT` or
 `Bahnhof Price Change`.
 
+`MAIL_TEXT_ENCODING` is optional. Supported values are `quoted-printable` and
+`base64`. If it is unset, the encoding is detected automatically based on the content.
+
 ### Call shell scripts directly
 
 Clone the repo and just call comparePrice.sh with your current speed, price and address.

@@ -9,6 +9,12 @@ const mailHost = env["MAIL_HOST"] ?? Deno.env.get("MAIL_HOST");
 const mailPort = env["MAIL_PORT"] ?? Deno.env.get("MAIL_PORT");
 const mailUsername = env["MAIL_USERNAME"] ?? Deno.env.get("MAIL_USERNAME");
 const mailPassword = env["MAIL_PASSWORD"] ?? Deno.env.get("MAIL_PASSWORD");
+const mailTextEncodingRaw = env["MAIL_TEXT_ENCODING"] ?? Deno.env.get("MAIL_TEXT_ENCODING");
+
+const mailTextEncoding =
+  mailTextEncodingRaw === "quoted-printable" || mailTextEncodingRaw === "base64"
+    ? mailTextEncodingRaw
+    : undefined;
 
 export function sendMail(text: string) {
   console.log("💌 Sending mail...");
@@ -29,6 +35,7 @@ export function sendMail(text: string) {
         to: mailTo,
         subject: mailSubject,
         text,
+        textEncoding: mailTextEncoding,
       },
       (error) => {
         if (error) {
