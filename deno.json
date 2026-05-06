@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "dev": "deno run --watch --allow-env --allow-read --allow-run --allow-net --allow-sys main.ts"
+  },
+  "imports": {
+    "nodemailer": "npm:nodemailer@8",
+    "std/dotenv": "https://deno.land/std@0.211.0/dotenv/mod.ts",
+    "std/path": "https://deno.land/std@0.211.0/path/mod.ts"
+  }
+}

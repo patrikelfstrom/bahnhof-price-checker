@@ -1,4 +1,5 @@
-import { dirname, fromFileUrl, join, load } from "./deps.ts";
+import { load } from "std/dotenv";
+import { dirname, fromFileUrl, join } from "std/path";
 import { sendApprise } from "./sendApprise.ts";
 import { sendMail } from "./sendMail.ts";
 

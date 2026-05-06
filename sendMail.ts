@@ -1,4 +1,6 @@
-import { load, nodemailer } from "./deps.ts";
+// @ts-types="npm:@types/nodemailer"
+import * as nodemailer from "nodemailer";
+import { load } from "std/dotenv";
 
 const env = await load();
 
