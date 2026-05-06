@@ -10,7 +10,7 @@ const mailPort = env["MAIL_PORT"] ?? Deno.env.get("MAIL_PORT");
 const mailUsername = env["MAIL_USERNAME"] ?? Deno.env.get("MAIL_USERNAME");
 const mailPassword = env["MAIL_PASSWORD"] ?? Deno.env.get("MAIL_PASSWORD");
 
-export function sendMail(text: string, callback: () => void) {
+export function sendMail(text: string) {
   console.log("💌 Sending mail...");
 
   const transporter = nodemailer.createTransport({
@@ -22,20 +22,26 @@ export function sendMail(text: string, callback: () => void) {
     },
   });
 
-  transporter.sendMail(
-    {
-      from: mailFrom,
-      to: mailTo,
-      subject: mailSubject,
-      text,
-    },
-    (error) => {
-      if (error) {
-        console.error(error);
-      } else {
+  return new Promise<void>((resolve, reject) => {
+    transporter.sendMail(
+      {
+        from: mailFrom,
+        to: mailTo,
+        subject: mailSubject,
+        text,
+      },
+      (error) => {
+        if (error) {
+          const message = error instanceof Error
+            ? error.message
+            : String(error);
+          reject(new Error("❌ Mail notification failed: " + message));
+          return;
+        }
+
         console.log("✅ Mail sent");
-      }
-      callback && callback();
-    }
-  );
+        resolve();
+      },
+    );
+  });
 }
